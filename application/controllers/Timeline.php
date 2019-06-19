@@ -22,4 +22,9 @@ class Timeline extends CI_Controller {
 		$this->load->view('timeline',$data);
 	}
 
+	public function job_detail($maconomy_number_c){
+	 	$this->load->library('proposalsugarclient');
+	 	$this->proposalsugarclient->findProposalByMaconomyNumber($maconomy_number_c);
+	}
+
 }
