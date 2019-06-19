@@ -1,0 +1,42 @@
+.timeline-center-h {
+    text-align: left;
+}
+
+.timeline-margin{
+    margin: 25px 0;
+}
+
+.bottomline {
+    padding:2px; 
+    color: #e61718;
+    background-color: #e61718;
+}
+
+.btn-primary {
+    color: #fff;
+    background-color: #414140;
+    border-color: #414140;
+}
+
+.timeline-margin h5{
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.upper-text-format{
+    font-size: 12px;
+    color: #414140;
+}
+
+.lower-text-format{
+    font-size: 15px;
+    color: #414140;
+    font-weight: 600;
+}
+
+.reset{
+    text-decoration: underline;
+    cursor: pointer; 
+    color: #e61718;
+}
+
