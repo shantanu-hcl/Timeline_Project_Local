@@ -1,6 +1,6 @@
 <?php
 //require_once('SugarClient.php');
-class ProposalSugarClient{
+class ProposalSugarClient extends SugarClient{
 	private $modulus = "LS010_Proposals"; //hardcoded, 1 class 1 modulus
 
 	/**
@@ -13,7 +13,7 @@ class ProposalSugarClient{
 	}
 
 	public function findProposalByMaconomyNumber($maconomy_number_c){
-		echo 112121; die;
+		 112121; die;
 	}
 	
 }
