@@ -67,7 +67,8 @@ class ProposalSugarClient extends SugarClient{
 		$proposalJSON = json_decode($proposalResponse);
 		if(empty($proposalJSON->records))
 		{
-		    	return "No Proposal Found";
+			return "No Proposal Found";
+		
 		}
 		else
 		{ 
