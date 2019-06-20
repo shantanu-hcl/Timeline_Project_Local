@@ -65,27 +65,33 @@ class ProposalSugarClient extends SugarClient{
 		$httpHeader = $this->getHttpHeaders('Fetch');
 		$proposalResponse = $this->curlMethod($proposal_url , $httpHeader, $filter_arguments, $method);
 		$proposalJSON = json_decode($proposalResponse);
-		$recordArray = $proposalJSON->records[0];
-		
-		if($source == 'UpdateFun')
+		if(empty($proposalJSON->records))
 		{
-			return $recordArray;
+		    	return "No Proposal Found";
 		}
-		else if ($source == 'webPage')
-		{
-			$proposalDetailsArray = array(
-					"id" => $recordArray->id,
-					"name" => $recordArray->name,
-					"date_modified" => $recordArray->date_modified,
-					"maconomy_job_c" => $recordArray->maconomy_job_c,
-					"accountName" => $recordArray->accounts_ls010_proposals_1_name,
-					"startDate" => $recordArray->project_start_date_c,
-					"closeDate" => $recordArray->project_close_date_c,
-					"estimatedCloseDate" => $recordArray->estimated_close_date_c,
-					"status" => $recordArray->status_c,
-					"maconomyStatus" => $recordArray->maconomy_status_c
-				);
-			return $proposalDetailsArray;
+		else
+		{ 
+			$recordArray = $proposalJSON->records[0];
+			if($source == 'UpdateFun')
+			{
+				return $recordArray;
+			}
+			else if ($source == 'webPage')
+			{
+				$proposalDetailsArray = array(
+						"id" => $recordArray->id,
+						"name" => $recordArray->name,
+						"date_modified" => $recordArray->date_modified,
+						"maconomy_job_c" => $recordArray->maconomy_job_c,
+						"accountName" => $recordArray->accounts_ls010_proposals_1_name,
+						"startDate" => $recordArray->project_start_date_c,
+						"closeDate" => $recordArray->project_close_date_c,
+						"estimatedCloseDate" => $recordArray->estimated_close_date_c,
+						"status" => $recordArray->status_c,
+						"maconomyStatus" => $recordArray->maconomy_status_c
+					);
+				return $proposalDetailsArray;
+			}
 		}
 		
 	}
