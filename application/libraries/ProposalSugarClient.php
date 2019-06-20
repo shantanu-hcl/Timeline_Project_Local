@@ -58,6 +58,7 @@ class ProposalSugarClient extends SugarClient{
 			"favorites" => false,
 			"my_items" => false,
 		);
+		//print_r($filter_arguments); die;
 		$proposal_url .= "?" . http_build_query($filter_arguments);
 		//-- End Requested URL ---
 		

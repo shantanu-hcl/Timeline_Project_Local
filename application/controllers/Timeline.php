@@ -31,9 +31,19 @@ class Timeline extends CI_Controller {
 	 * required data macronomy number from view 
 	 */
 
-	public function job_detail($maconomy_number_c){
-	 	$this->load->library('proposalsugarclient');
-	 	$this->proposalsugarclient->findProposalByMaconomyNumber($maconomy_number_c);
+	public function job_detail(){
+		//91231524
+		$maconomy_number_c = $this->input->post('job_number');
+		$this->load->library('proposalsugarclient');
+		$dataArray = $this->proposalsugarclient->findProposalByMaconomyNumber($maconomy_number_c,'webPage');
+		//print_r($dataArray); die;
+		if(is_array($dataArray)){
+			$response = $this->load->view('job_detail',$dataArray);
+		}else{
+			$response = "<div class='container'><div class='row'><div class='col-md-12 col-sm-3 timeline-margin-header'><h4>No Proposal Found .</h4></div></div></div>";
+		}
+		echo $response;
+		
 	}
 
 	/**
