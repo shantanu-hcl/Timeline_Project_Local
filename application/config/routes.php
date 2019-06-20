@@ -56,3 +56,4 @@ $route['translate_uri_dashes'] = FALSE;
 // custom route 
 
 $route['job_detail/(:any)'] = 'timeline/job_detail/$1';
+$route['update_timeline'] = 'timeline/update_timeline/$1';
