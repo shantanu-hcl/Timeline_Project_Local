@@ -1,3 +1,4 @@
+<input type="hidden" name="proposal_id" value="<?php echo $id; ?>"/>
 <div class="container">
     <div class="row">
         <div class="col-md-12 col-sm-3 timeline-margin-header">
@@ -17,7 +18,7 @@
         </div>
         <div class="col-md-4 col-sm-12">
             <div class="col-md-12 upper-text-format">Proposal Id</div>
-            <div class="col-md-12 lower-text-format"> <?php echo $id; ?></div>
+            <div class="col-md-12 lower-text-format"> <?php echo $proposalNo; ?></div>
         </div>
     </div>   
 </div>
