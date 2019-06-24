@@ -16,22 +16,25 @@ class ProposalSugarClient extends SugarClient{
 	public function getHttpHeaders($action)
 	{
 		$response = '';
-		if ($action == 'Fetch' || $action =='Update') {
+		if ($action == 'Fetch' || $action == 'Update') {
 			
 			//-- Get Access token---
+			
 			$getAccessTokenExpiry = $this->__check_token_expires('access_token_Cookie');
 			if ($getAccessTokenExpiry != False) {
 				$accessToken = $getAccessTokenExpiry;	
 			} else {
-				$authTokens = $this->__load_user_token_from_aws('admin','Password123');
+				//$authTokens = $this->__load_user_token_from_aws('admin','Password123');
+				$authTokens = $this->__load_user_token_from_aws('AgrawalSa','Test1234');
 				$authTokensArray=json_decode($authTokens);
+				
 				if ($authTokensArray->status == 'Fail') {
 						$response = array(
 						"status" => "Fail",
 						"msg" => "Invalid access to CRM,Please contact to Administrator"
 						);
 				} else {
-					$accessToken = $authTokens['access_token'];	
+					$accessToken = $authTokensArray->access_token;	
 				}	
 			}
 			
@@ -74,15 +77,20 @@ class ProposalSugarClient extends SugarClient{
 		$httpHeaderResponseArr = json_decode($httpHeaderResponse);
 		if ($httpHeaderResponseArr->status == 'Success') {
 			$httpHeader = $httpHeaderResponseArr->httpHeader;
-			$proposalResponse = $this->curlMethod($proposal_url , $httpHeader, $filter_arguments, $method);
+			$proposalResponse = $this->curlMethod($proposal_url, $httpHeader, $filter_arguments, $method);
 			$proposalJSON = json_decode($proposalResponse);
-			if (empty($proposalJSON->records)) {
-				$response = array(
-						"status"=>"Fail", 
-						"msg"=>"No Proposal Found"
-					);
-				return json_encode($response);
+			
+			if (isset($proposalJSON->error) && $proposalJSON->error == 'invalid_grant') {
+				
+				$authRefresh = $this->__refresh_token($_COOKIE['refresh_token_Cookie']);
+				//--- Recursive call---
+				
+				$this->findProposalByMaconomyNumber($maconomyNo,'webPage');
+				
+				//------
+				
 			} else { 
+			
 				$recordArray = $proposalJSON->records[0];
 				if ($source == 'UpdateFun') {
 					return $recordArray;
