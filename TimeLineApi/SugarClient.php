@@ -98,6 +98,7 @@ class SugarClient {
 				"download_token" => $download_token );
 				
 			setcookie("access_token_Cookie", $access_token, time()+ 3600,'/'); 	// expires after 1 hour
+			setcookie("refresh_token_Cookie", $refresh_token, time()+ 3600,'/'); 
 			return json_encode($responseArray);
 		} else {
 			$response = array(
@@ -109,14 +110,59 @@ class SugarClient {
 	}
 	protected function __check_token_expires($token_key)
 	{
-		if(empty($_COOKIE)) {
+		//unset($_COOKIE['access_token_Cookie']);
+		
+		if(empty($_COOKIE[$token_key])) {
 			return false;
 		} else {
 			return $_COOKIE[$token_key];
 		}
 	}
-	private function __refresh_token($username, $refresh_token)
+	protected function __refresh_token($refresh_token)
 	{
+		if(!empty($_COOKIE['refresh_token_Cookie'])) {
+		if(!empty($_COOKIE['refresh_token_Cookie'])) {
+			$httpHeader = array(
+					"Content-Type: application/json"
+				);
+			$oauth2_payload = array(
+				"grant_type" => "refresh_token",
+				"client_id" => 'sugar', 
+				"client_secret" => '',
+				"refresh_token" => $refresh_token,
+			);
+			print_R(json_encode($oauth2_payload));
+			$method = "POST";
+			$curl_url = $this->getBaseUrlFromConfig();
+			$auth_url = $curl_url . "/oauth2/token";
+			$curl_response = $this->curlMethod($auth_url, $httpHeader, $oauth2_payload, $method);
+			$curl_response_array = json_decode($curl_response);
+			
+			if (isset($curl_response_array->access_token)) {
+				$access_token = $curl_response_array->access_token;
+				$refresh_token = $curl_response_array->refresh_token;
+				$download_token =$curl_response_array->download_token;
+				$responseArray = array(
+					"status" => "Success",
+					"access_token" => $access_token,
+					"refresh_token" => $refresh_token,
+					"download_token" => $download_token );
+					
+				setcookie("access_token_Cookie",'', time()- 3700,'/'); 	// expires after 1 hour
+				setcookie("refresh_token_Cookie",'', time()- 3700,'/');
+				setcookie("access_token_Cookie", $access_token, time()+ 3600,'/'); 	// expires after 1 hour
+				setcookie("refresh_token_Cookie", $refresh_token, time()+ 3600,'/'); 
+				return json_encode($responseArray);
+			} else {
+				$response = array(
+						"status" => "Fail",
+						"msg" => "Invalid access to CRM,Please contact to Administrator"
+						);
+				return json_encode($response);
+			}
+			
+			
+		} 
 
 	}
 	/**
@@ -149,6 +195,7 @@ class SugarClient {
 
 		//execute request
 		$curl_response = curl_exec($auth_curl_request);
+		//print_R($curl_response);
 		return $curl_response;
 	}
 }
