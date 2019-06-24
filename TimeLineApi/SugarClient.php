@@ -120,7 +120,7 @@ class SugarClient {
 	}
 	protected function __refresh_token($refresh_token)
 	{
-		if(!empty($_COOKIE['refresh_token_Cookie'])) {
+		
 		if(!empty($_COOKIE['refresh_token_Cookie'])) {
 			$httpHeader = array(
 					"Content-Type: application/json"
