@@ -95,15 +95,15 @@ class Curl {
 	public function post($params = array(), $options = array())
 	{
 		// If its an array (instead of a query string) then format it correctly
-		if (is_array($params))
-		{
-			$params = http_build_query($params, NULL, '&');
-		}
+//		if (is_array($params))
+//		{
+//			$params = http_build_query($params, NULL, '&');
+//		}
 		// Add in the specific options provided
 		$this->options($options);
 		$this->http_method('post');
 		$this->option(CURLOPT_POST, TRUE);
-		$this->option(CURLOPT_POSTFIELDS, $params);
+		$this->option(CURLOPT_POSTFIELDS, json_encode($params));
 	}
 	public function put($params = array(), $options = array())
 	{
@@ -324,6 +324,12 @@ class Curl {
 		$this->error_string = '';
 		$this->session = NULL;
 	}
+        
+        public function getBaseUrlFromConfig(){
+            $url = $this->_ci->config->item('sugar_client_url');
+            return $url;
+	}
+        
 }
 /* End of file Curl.php */
 /* Location: ./application/libraries/Curl.php */
