@@ -89,7 +89,17 @@ class ProposalSugarClient extends SugarClient{
 				
 				//------
 				
-			} else { 
+			}else if(empty($proposalJSON->records)) {
+				
+				$response = array(
+					"status" => "Fail",
+					"msg" => "No Proposal Found"
+					);
+				return json_encode($response);
+				
+				
+				
+			}else { 
 			
 				$recordArray = $proposalJSON->records[0];
 				if ($source == 'UpdateFun') {
