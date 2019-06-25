@@ -106,6 +106,7 @@ class ProposalSugarClient extends SugarClient{
 					return $recordArray;
 				} elseif ($source == 'webPage')	{
 					$proposalDetailsArray = array(
+							"APIStatus" => "APISUCCESS",
 							"id" => $recordArray->id,
 							"name" => $recordArray->name,
 							"date_modified" => $recordArray->date_modified,
