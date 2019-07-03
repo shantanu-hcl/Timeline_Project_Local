@@ -3,6 +3,12 @@
 * This class is the base class for client intergacted with sugar 
 */
 require_once('config.php');
+require 'awsSDK\aws-autoloader.php';
+date_default_timezone_set('UTC');
+
+use Aws\DynamoDb\Exception\DynamoDbException;
+use Aws\DynamoDb\Marshaler;
+
 class SugarClient {
 
     private $access_token = '';
@@ -27,32 +33,23 @@ class SugarClient {
 		// if the data is found in the dynamodb assign the variable, and return the object
 	}
 	/**
-	* @return SugarClient
+	*	@Connect TO DynamoDB  
 	*/
-/*	static public function getInstance($username){
-		if (is_null(self::$instance[$username])) {
-          self::$instance[$username] = new SugarClient($username);
-		}
-		return self::$instance[$username];
+	public function connectToDb()
+	{
+		$sdk = new Aws\Sdk([
+			'endpoint'   => 'http://localhost:8000',
+			'region'   => 'local',
+			'version'  => 'latest'
+		]);
+
+		$dynamodb = $sdk->createDynamoDb();
+		return $dynamodb;
 	}
+	
 	/**
-	* Reference https://support.sugarcrm.com/Documentation/Sugar_Developer/Sugar_Developer_Guide_8.2/Integration/Web_Services/REST_API/Endpoints/oauth2token_POST/index.html
-	* @param string, $base_url 
-	* @param string, $username
-	* @param string, $password
-	* @return SugarClient
+	*	@return base url for API 
 	*/
-	/*static public function authenticate($username, $password){
-		// step 1 load the base url from config;
-		// step 2 call the /oauth2/token service to get the result
-		// step 3 if successful 
-		//	calculate when token will expire
-		//  insert/update the all the data into dynamodb and the record should be deleted from dynamodb in "refresh_expires_in"
-		// step 4 destory the cache copy in the $instance
-		self::$instance[$username] = null;
-		// step 5 return SugarClient
-		return self::getInstance($username);
-	}*/
 	public function getBaseUrlFromConfig()
 	{
 		// load the config
@@ -60,11 +57,47 @@ class SugarClient {
 		$url = $config_cstm['sugar_base_url'];
 		return $url;
 	}
+	
 	/**
 	* @param $username
-	* @return array($access_token, $refresh_token, $download_token)
+	* @return array($itemList)
 	*/
-	protected function __load_user_token_from_aws($username, $password)
+	public function __load_user_token_from_aws($username)
+	{
+		global $config_cstm;
+		$dynamodb = $this->connectToDb();	
+		$marshaler = new Marshaler();
+		$tableName = $config_cstm['table'];
+		$key = $marshaler->marshalJson('
+			{
+				"username": "' . $username . '"
+			}
+		');
+
+		$params = [
+			'TableName' => $tableName,
+			'Key' => $key
+		];
+
+		try {
+			$result = $dynamodb->getItem($params);
+			return $result;
+
+		} catch (DynamoDbException $e) {
+			$response = array(
+				"status" => "Fail",
+				"msg" => "Unable to get tokens!"
+				);
+			//echo $e->getMessage() . "\n";
+			return $response;
+		}
+	}
+
+	/**
+	* @param $username
+	* @return array($status, $access_token, $refresh_token, $download_token)
+	*/
+	public function authenticate($username, $password)
 	{
 		global $config_cstm;
 		$curl_url = $this->getBaseUrlFromConfig();
@@ -97,31 +130,86 @@ class SugarClient {
 				"refresh_token" => $refresh_token,
 				"download_token" => $download_token );
 				
-			setcookie("access_token_Cookie", $access_token, time()+ 3600,'/'); 	// expires after 1 hour
-			setcookie("refresh_token_Cookie", $refresh_token, time()+ 3600,'/'); 
-			return json_encode($responseArray);
+			//---put the All Token to dynamodb
+			$current_dateTime = date('Y-m-d h:m:s');
+			$dbRespone = $this->insertItemToDB($username,$access_token,$refresh_token,$download_token,$current_dateTime);
+			$dbResponeArr = json_decode($dbRespone);
+			if($dbResponeArr->status == 'Success') {
+				return json_encode($responseArray);
+			} elseif ($dbResponeArr->status == 'Fail') {
+				$response = array(
+					"status" => "Fail",
+					"msg" => "Something went wrong, Please contact to Administrator"
+					);
+					
+				return json_encode($response);
+			}
+			//------End------			
+			
 		} else {
 			$response = array(
 					"status" => "Fail",
 					"msg" => "Invalid access to CRM,Please contact to Administrator"
-					);
+				);
+					
 			return json_encode($response);
 		}
 	}
-	protected function __check_token_expires($token_key)
+	
+	/**
+	* @param $username, $access_token, $refresh_token, $download_token
+	* @return array($status)
+	*/
+
+	public function insertItemToDB($username,$access_token,$refresh_token,$download_token,$current_dateTime)
 	{
-		//unset($_COOKIE['access_token_Cookie']);
-		
-		if(empty($_COOKIE[$token_key])) {
-			return false;
-		} else {
-			return $_COOKIE[$token_key];
+		global $config_cstm;
+		$dynamodb = $this->connectToDb();
+		$marshaler = new Marshaler();
+		$tableName = $config_cstm['table'];
+		$item = $marshaler->marshalJson('
+			{
+				 "username": "' . $username . '",
+				"access_token": "' .$access_token .'",
+				"refresh_token": "' . $refresh_token . '",
+				"download_token": "' . $download_token . '",
+				"access_token_time": "' . $current_dateTime . '",
+				"refresh_token_time": "' .  $current_dateTime . '"
+			}
+		');
+
+		$params = [
+			'TableName' => $tableName,
+			'Item' => $item
+		];
+
+		try {
+			$result = $dynamodb->putItem($params);
+			$response = array(
+					"status" => "Success",
+					);
+			
+		} catch (DynamoDbException $e) {
+			echo "Unable to add item:\n";
+			echo $e->getMessage() . "\n";
+			$response = array(
+					"status" => "Fail",
+					);
 		}
+		return json_encode($response);
+
 	}
-	protected function __refresh_token($refresh_token)
+		
+	/**
+	* @param $refresh_token
+	* @return array($status, $access_token, $refresh_token, $download_token)
+	*/
+	public function __refresh_token($refresh_token,$username)
 	{
 		
-		if(!empty($_COOKIE['refresh_token_Cookie'])) {
+		global $config_cstm;
+		
+		if (isset($refresh_token)) {
 			$httpHeader = array(
 					"Content-Type: application/json"
 				);
@@ -131,14 +219,20 @@ class SugarClient {
 				"client_secret" => '',
 				"refresh_token" => $refresh_token,
 			);
-			print_R(json_encode($oauth2_payload));
+			
 			$method = "POST";
 			$curl_url = $this->getBaseUrlFromConfig();
 			$auth_url = $curl_url . "/oauth2/token";
 			$curl_response = $this->curlMethod($auth_url, $httpHeader, $oauth2_payload, $method);
 			$curl_response_array = json_decode($curl_response);
-			
-			if (isset($curl_response_array->access_token)) {
+		
+			if (isset($curl_response_array->error) && $curl_response_array->error_message == 'Invalid refresh token') {
+				
+				$password = $config_cstm['sugar_hash'];
+				$getAccessTokenFromLogin = $this->authenticate($username, $password);
+				return json_encode($getAccessTokenFromLogin);	
+			}
+			elseif (isset($curl_response_array->access_token)) {
 				$access_token = $curl_response_array->access_token;
 				$refresh_token = $curl_response_array->refresh_token;
 				$download_token =$curl_response_array->download_token;
@@ -147,12 +241,23 @@ class SugarClient {
 					"access_token" => $access_token,
 					"refresh_token" => $refresh_token,
 					"download_token" => $download_token );
-					
-				setcookie("access_token_Cookie",'', time()- 3700,'/'); 	// expires after 1 hour
-				setcookie("refresh_token_Cookie",'', time()- 3700,'/');
-				setcookie("access_token_Cookie", $access_token, time()+ 3600,'/'); 	// expires after 1 hour
-				setcookie("refresh_token_Cookie", $refresh_token, time()+ 3600,'/'); 
-				return json_encode($responseArray);
+
+				//---put the All Token to dynamodb
+				$current_dateTime = date('Y-m-d h:m:s');
+				$dbRespone = $this->insertItemToDB($username,$access_token,$refresh_token,$download_token,$current_dateTime);
+				$dbResponeArr = json_decode($dbRespone);
+			
+				if($dbResponeArr->status == 'Success') {
+					return json_encode($responseArray);
+				} elseif ($dbResponeArr->status == 'Fail') {
+					$response = array(
+						"status" => "Fail",
+						"msg" => "Something went wrong, Please contact to Administrator"
+						);
+						
+					return json_encode($response);
+				}
+			//------End------	
 			} else {
 				$response = array(
 						"status" => "Fail",
@@ -165,17 +270,19 @@ class SugarClient {
 		} 
 
 	}
+	
+
 	/**
 	* Every Http call should check if the token is about to expires or not, if so, refresh the token
 	**/
 
 	// get
-	/*protected function __get($method, $query_string = "", $params = null, $addtl_headers = array()){
+	/*public function __get($method, $query_string = "", $params = null, $addtl_headers = array()){
 	}*/
 	//post
 	//put
 	//error_handle
-	protected function curlMethod($curl_url , $http_header, $payload, $method)
+	public function curlMethod($curl_url , $http_header, $payload, $method)
 	{ 
 		$auth_curl_request = curl_init();
 		if ($method == "POST" || $method == "PUT") {
@@ -198,6 +305,7 @@ class SugarClient {
 		//print_R($curl_response);
 		return $curl_response;
 	}
+	
 }
 
 
