@@ -24,10 +24,12 @@ class ProposalSugarClient extends SugarClient{
 			$password = $config_cstm['sugar_hash'];
 	
 			$getAccessTokenExpiry = $this->__load_user_token_from_aws($username);
+
 			if (isset($getAccessTokenExpiry['Item'])) {
 				$accessToken = $getAccessTokenExpiry['Item']['access_token']['S'];	
 				$refreshToken = $getAccessTokenExpiry['Item']['refresh_token']['S'];	
-			} elseif (!isset($getAccessTokenExpiry['Item'])) {
+			} elseif (!isset($getAccessTokenExpiry['Item']) && !isset($getAccessTokenExpiry['status'])) {
+				
 				$getAccessTokenFromLogin = $this->authenticate($username, $password);
 				$authTokensArray = json_decode($getAccessTokenFromLogin);
 				if ($authTokensArray->status == 'Fail') {
@@ -35,10 +37,18 @@ class ProposalSugarClient extends SugarClient{
 						"status" => "Fail",
 						"msg" => "Invalid access to CRM,Please contact to Administrator"
 						);
+					return json_encode($response);
 				} else {
 					$accessToken = $authTokensArray->access_token;
 					$refreshToken = $authTokensArray->refresh_token;	
 				}	
+			} elseif (isset($getAccessTokenExpiry['status']) && $getAccessTokenExpiry['status']=='Fail') {
+				$response = array(
+						"status" => "Fail",
+						"msg" => "Something went wrong. Please try again !"
+						);
+					
+				return json_encode($response);
 			}
 			
 			//-- End Access Token---
@@ -83,44 +93,52 @@ class ProposalSugarClient extends SugarClient{
 		
 		$httpHeaderResponse = $this->getHttpHeaders('Fetch');
 		$httpHeaderResponseArr = json_decode($httpHeaderResponse);
-		
-		$httpHeader = $httpHeaderResponseArr->httpHeader;
-		$refreshToken = $httpHeaderResponseArr->refreshToken;
-		$proposalResponse = $this->curlMethod($proposal_url, $httpHeader, $filter_arguments, $method);
-		$proposalJSON = json_decode($proposalResponse);
-		
-		if (isset($proposalJSON->error) && $proposalJSON->error_message == 'The access token provided is invalid.') {
-			$authRefresh = $this->__refresh_token($refreshToken,$username);
-			//--- Recursive call---
-			return ($this->findProposalByMaconomyNumber($maconomyNo,'webPage'));
-			//---END----	
-		} elseif(empty($proposalJSON->records)) {
-			
-			$response = array(
-				"status" => "Fail",
-				"msg" => "No Proposal Found"
-				);
-			return json_encode($response);
+		if(isset($httpHeaderResponseArr->status) && $httpHeaderResponseArr->status == 'Fail'){
+				$response = array(
+						"status" => "Fail",
+						"msg" => "Something went wrong. Please try again !"
+						);
+					
+				return json_encode($response);
 		} else {
-			$recordArray = $proposalJSON->records[0];
-			if ($source == 'UpdateFun') {
-				return $recordArray;
-			} elseif ($source == 'webPage') {
-				$proposalDetailsArray = array(
-						"APIStatus" => "APISUCESS",
-						"id" => $recordArray->id,
-						"name" => $recordArray->name,
-						"date_modified" => $recordArray->date_modified,
-						"maconomy_job_c" => $recordArray->maconomy_job_c,
-						"proposalNO" => $recordArray->proposal_id_c,
-						"accountName" => $recordArray->accounts_ls010_proposals_1_name,
-						"startDate" => $recordArray->project_start_date_c,
-						"closeDate" => $recordArray->project_close_date_c,
-						"estimatedCloseDate" => $recordArray->estimated_close_date_c,
-						"status" => $recordArray->status_c,
-						"maconomyStatus" => $recordArray->maconomy_status_c
+			$httpHeader = $httpHeaderResponseArr->httpHeader;
+			$refreshToken = $httpHeaderResponseArr->refreshToken;
+			$proposalResponse = $this->curlMethod($proposal_url, $httpHeader, $filter_arguments, $method);
+			$proposalJSON = json_decode($proposalResponse);
+			
+			if (isset($proposalJSON->error) && $proposalJSON->error_message == 'The access token provided is invalid.') {
+				$authRefresh = $this->__refresh_token($refreshToken,$username);
+				//--- Recursive call---
+				return ($this->findProposalByMaconomyNumber($maconomyNo,'webPage'));
+				//---END----	
+			} elseif(empty($proposalJSON->records)) {
+				
+				$response = array(
+					"status" => "Fail",
+					"msg" => "No Proposal Found"
 					);
-				return json_encode($proposalDetailsArray);
+				return json_encode($response);
+			} else {
+				$recordArray = $proposalJSON->records[0];
+				if ($source == 'UpdateFun') {
+					return $recordArray;
+				} elseif ($source == 'webPage') {
+					$proposalDetailsArray = array(
+							"APIStatus" => "APISUCESS",
+							"id" => $recordArray->id,
+							"name" => $recordArray->name,
+							"date_modified" => $recordArray->date_modified,
+							"maconomy_job_c" => $recordArray->maconomy_job_c,
+							"proposalNO" => $recordArray->proposal_id_c,
+							"accountName" => $recordArray->accounts_ls010_proposals_1_name,
+							"startDate" => $recordArray->project_start_date_c,
+							"closeDate" => $recordArray->project_close_date_c,
+							"estimatedCloseDate" => $recordArray->estimated_close_date_c,
+							"status" => $recordArray->status_c,
+							"maconomyStatus" => $recordArray->maconomy_status_c
+						);
+					return json_encode($proposalDetailsArray);
+				}
 			}
 		}
 		
