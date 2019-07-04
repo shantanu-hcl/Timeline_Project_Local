@@ -92,7 +92,8 @@ class SugarClient {
 			return $response;
 		}
 	}
-
+	
+	
 	/**
 	* @param $username
 	* @return array($status, $access_token, $refresh_token, $download_token)
