@@ -10,4 +10,6 @@ $config_cstm['sugar_clientSecret'] = '';
 $config_cstm['sugar_hash'] = base64_decode('VGVzdDEyMzQ=');
 $config_cstm['sugar_grant'] = 'password';
 $config_cstm['platform'] = 'base';
-$config_cstm['table'] = 'SugarCRM_tokens';
+$config_cstm['table'] = 'timeline_token';
+$config_cstm['DBregion'] = 'local';
+$config_cstm['DBVersion'] = 'latest';
