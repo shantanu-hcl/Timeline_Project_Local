@@ -1,14 +1,16 @@
 <?php
 /*
+# Author: Sameeksha Agrawal
+# Date Created:  18/06/2019
 * This file is for integration with Codeignitor 
 */
 
 require_once('ProposalSugarClient.php');
+require_once('SugarClient.php');
 
 $requestJSON = json_decode(file_get_contents('php://input'));
 
 if ($requestJSON->request_type == 'Fetch') {
-	
 	$maconomyNo = $requestJSON->maconomyNo;
 	$ProposalSugarClient = new ProposalSugarClient();
 	$response = $ProposalSugarClient->findProposalByMaconomyNumber($maconomyNo,'webPage');
