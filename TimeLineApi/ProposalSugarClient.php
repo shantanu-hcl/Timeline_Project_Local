@@ -1,21 +1,29 @@
 <?php
+
+/*
+# Author: Sameeksha Agrawal
+# Date Created:  18/06/2019
+# This class is the class for Searching Proposal and update the proposal details in CRM 
+*/
+
 require_once('SugarClient.php');
+require_once('Curl.php');
 
-class ProposalSugarClient extends SugarClient{
-
-	/**
-	* Get Proposal by Id
-	* @param, string 
-	* @return, object/Exception
-	*/
+class ProposalSugarClient extends SugarClient 
+{
+	use Curl;
+	
 	public function __construct()
 	{
 		parent::__construct();
-	
 	}
+	
+	/*
+	* @param $action
+	* @return array(refreshToken, httpHeader=>array(Content-Type,oauth-token))
+	*/
 	public function getHttpHeaders($action)
 	{
-		
 		$response = '';
 		if ($action == 'Fetch' || $action == 'Update') {
 			//-- Get Access token---
@@ -63,6 +71,12 @@ class ProposalSugarClient extends SugarClient{
 			return json_encode($response);
 		}
 	}
+	
+	/*
+	* @param $maconomyNo, $source
+	* Source will be webPage or UpdateFun
+	* @return array of Proposal Details  
+	*/
 	public function findProposalByMaconomyNumber($maconomyNo, $source)
 	{
 		
@@ -103,7 +117,7 @@ class ProposalSugarClient extends SugarClient{
 		} else {
 			$httpHeader = $httpHeaderResponseArr->httpHeader;
 			$refreshToken = $httpHeaderResponseArr->refreshToken;
-			$proposalResponse = $this->curlMethod($proposal_url, $httpHeader, $filter_arguments, $method);
+			$proposalResponse = $this->curlCall($proposal_url, $httpHeader, $filter_arguments, $method);
 			$proposalJSON = json_decode($proposalResponse);
 			
 			if (isset($proposalJSON->error) && $proposalJSON->error_message == 'The access token provided is invalid.') {
@@ -143,7 +157,11 @@ class ProposalSugarClient extends SugarClient{
 		}
 		
 	}
-	//---Start Of update Proposal----
+	
+	/*
+	* @param $maconomyNo, $proposalId, $lastDateModified, $startDate, $closeDate, $estimatedCloseDate
+	* @return status (Success Or Fail)  
+	*/
 	public function updateProposalByID($maconomyNo, $proposalId, $lastDateModified ,$startDate, $closeDate, $estimatedCloseDate)
 	{
 		$proposalDetails = $this->findProposalByMaconomyNumber($maconomyNo, 'UpdateFun');
@@ -169,7 +187,7 @@ class ProposalSugarClient extends SugarClient{
 			$httpHeaderResponseUpArr = json_decode($httpHeaderResponseUpdate);
 		
 			$httpHeader = $httpHeaderResponseUpArr->httpHeader;
-			$proposalResponse = $this->curlMethod($proposal_url, $httpHeader, $proposalDetails, $method);
+			$proposalResponse = $this->curlCall($proposal_url, $httpHeader, $proposalDetails, $method);
 			$proposalJSON = json_decode($proposalResponse);
 			if (!empty($proposalJSON->id)) {
 				$response = array(
