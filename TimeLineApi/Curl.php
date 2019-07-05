@@ -1,18 +1,18 @@
 <?php
 /*
-* This class is the base class for client integrated with sugar 
+# Author: Sameeksha Agrawal
+# Date Created:  04/07/2019
+# This class is the base class to make connection with curl 
 */
 require_once('config.php');
 require_once('DBOpertaions.php');
 
 trait Curl
 {
-/**
-	* Every Http call should check if the token is about to expires or not, if so, refresh the token
+	/**
+	* Make Curl Connect
 	**/
-	//post
-	//put
-	//error_handle
+	
 	public function curlCall($curl_url , $http_header, $payload, $method)
 	{ 
 		$auth_curl_request = curl_init();
