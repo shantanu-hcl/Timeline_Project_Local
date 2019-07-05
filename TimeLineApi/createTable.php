@@ -13,7 +13,7 @@ $sdk = new Aws\Sdk([
 $dynamodb = $sdk->createDynamoDb();
 
 $params = [
-    'TableName' => 'SugarCRM_tokens',
+    'TableName' => 'timeline_token',
     'KeySchema' => [
         [
             'AttributeName' => 'username',
